@@ -1,4 +1,325 @@
 # Summay
 
-![image-20210618101308563](picture/image-20210618101308563.png)
+## JAVA基础
+
+### 枚举enum
+
+是什么：变量的取值都在有限的集合内。
+
+作用场景：如四季，星期，尺码，数据库status；还可以用于单例模式。
+
+方法
+
+- static Enum valueOf(Class enumClass, String name)：返回指定枚举常量
+- String toString()：返回枚举常量名
+- int ordinal()：返回枚举下标，类似数组
+- T values()：返回所有枚举变量
+- int compareTo(E other)：return this.ordinal() - other.ordinal();
+
+使用枚举诞生之前，一般使用常量类。
+
+**常量类**
+
+```JAVA
+public class SeasonConstant {
+	public static final int SPRING = 1;
+	public static final int SUMMER = 2;
+	public static final int AUTUMN = 3;
+	public static final int WINTER = 4;
+}
+```
+
+枚举类
+
+```java
+public enum SeasonEnum {
+  SPRING,
+  SUMMER,
+  AUTUMN,
+  WINTER;
+}
+```
+
+看需求，体会枚举类的优点。
+
+**需求1**：根据季节输出月份
+
+常量类版函数
+
+```java
+// 根据季节输出月份
+public static void printMonth(int season) {
+  switch(season) {
+    case 1:
+      System.out.println("1-3月份");
+      break;
+    case 2:
+      System.out.println("4-6月份");
+      break;
+    case 3:
+      System.out.println("7-9月份");
+      break;
+    case 4:
+      System.out.println("10-12月份");
+      break;
+    default:
+      System.out.println("输入的季节有误！");
+  }
+}
+```
+
+枚举类版函数
+
+```java
+// 根据季节输出月份
+public static void printMonth(SeasonEnum season) {
+  switch(season) {
+    case SPRING:
+      System.out.println("1-3月份");
+      break;
+    case SUMMER:
+      System.out.println("4-6月份");
+      break;
+    case AUTUMN:
+      System.out.println("7-9月份");
+      break;
+    case WINTER:
+      System.out.println("10-12月份");
+      break;
+  }
+}
+```
+
+测试函数
+
+```java
+public class EnumerateTest {
+    public static void main(String[] args) {
+        SeasonConstant.printMonth(SeasonConstant.SPRING);
+        SeasonEnum.printMonth(SeasonEnum.AUTUMN);
+    }
+}
+```
+
+存在问题：testSeasonConstant(5)可以不走常量类，直接运行，且不存在此季节。
+
+优点:
+
+- 可以限定函数的输入范围
+
+**需求2**：根据季节输出中文名
+
+常量类版函数
+
+```JAVA
+// 输出中文名
+public static void printChineseName(int season) {
+  switch(season) {
+    case 1:
+      System.out.println("春天");
+      break;
+    case 2:
+      System.out.println("夏天");
+      break;
+    case 3:
+      System.out.println("秋天");
+      break;
+    case 4:
+      System.out.println("冬天");
+      break;
+    default:
+      System.out.println("输入的季节有误！");
+  }
+}
+```
+
+枚举类版
+
+```java
+public enum SeasonEnum {
+  SPRING("春天"),
+  SUMMER("夏天"),
+  AUTUMN("秋天"),
+  WINTER("冬天");
+
+  private String chineseName;
+
+  SeasonEnum(String chineseName) {
+    this.chineseName = chineseName;
+  }
+
+  public String getChineseName() {
+    return chineseName;
+  }
+
+  // 根据季节输出中文名
+  public static void printChineseName(SeasonEnum season) {
+    System.out.println(season.getChineseName());
+  }
+}
+```
+
+枚举类优点：
+
+- 可以附多个属性，无需再switch判断
+
+
+
+枚举单例
+
+
+
+## 设计模式
+
+### 单例模式
+
+
+
+
+
+## 网络
+
+### HTTP
+
+- 传输层TCP/IP协议之上的应用层协议，默认端口80
+- 不保存状态
+- 以ASCLL码传输
+
+#### HTTP 报文
+
+**请求报文**
+
+```BASH
+<method> <request-url> <version> # 状态行
+<headers> # 请求头
+<entity-body> # 消息主体
+```
+
+**method**: 对url资源的操作
+
+- get
+- post
+- put
+- delete
+
+**request-url**：一个URL描述网络上的一个资源
+
+**version**：http协议的版本
+
+**headers**
+
+- host
+- User-Agent
+- Connection
+- Content-Type
+- Content-Length
+- ...
+
+```BASH
+ POST / HTTP/1.1
+ Host: www.example.com
+ User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7.6)
+ Gecko/20050225 Firefox/1.0.1
+ Content-Type: application/x-www-form-urlencoded
+ Content-Length: 40
+ Connection: Keep-Alive
+
+ sex=man&name=Professional 
+```
+
+**相应报文**
+
+```bash
+HTTP/1.1 200 OK # 状态行
+
+Server:Apache Tomcat/5.0.12 # 响应头
+Date:Mon,6Oct2003 13:23:42 GMT
+Content-Length:112
+
+<html>... # 响应正文
+```
+
+状态码
+
+- `200 OK` 客户端请求成功
+- `301 Moved Permanently` 请求永久重定向
+- `302 Moved Temporarily` 请求临时重定向
+- `304 Not Modified` 文件未修改，可以直接使用缓存的文件。
+- `400 Bad Request` 由于客户端请求有语法错误，不能被服务器所理解。
+- `401 Unauthorized` 请求未经授权。这个状态代码必须和WWW-Authenticate报头域一起使用
+- `403 Forbidden` 服务器收到请求，但是拒绝提供服务。服务器通常会在响应正文中给出不提供服务的原因
+- `404 Not Found` 请求的资源不存在，例如，输入了错误的URL
+- `500 Internal Server Error` 服务器发生不可预期的错误，导致无法完成客户端的请求。
+- `503 Service Unavailable` 服务器当前不能够处理客户端的请求，在一段时间之后，服务器可能会恢复正常。
+
+
+
+### HTTPS
+
+![image-20210618163025999](picture/image-20210618163025999.png)
+
+
+
+### TCP
+
+transmission control protocol ：传输控制协议
+
+- 面向连接的，可靠的，基于字节流传输的通信层协议。
+
+应用层（http等）向TCP发送8位字节表示的数据流，TCP将数据流分割成适当长度的报文段（受MTU限制），传给IP层，由它传给接收端的TCP层。
+
+服务端执行listen函数后，存在两个队列
+
+- SYN：第二次握手
+- ACCEPT：第三次握手
+
+#### 三次握手
+
+![image-20210618163941350](picture/image-20210618163941350.png)
+
+#### TCB
+
+transmission control block: 保存了连接信息一条条session
+
+#### session
+
+- 源端口，目的端口，目的IP，序列（随机数），应答序号，双方窗口大小，tcp状态，tcp输入输出队列，应用层输出队列，tcp重传有关变量。
+
+#### 可靠性、强壮性保证措施
+
+- 序号机制：发送端每一个字节传输序号+1，(0 - 2^32-1)
+- 确认机制：接收端每一个字节传输序号+1，接收到一定数量的连续字节流才发送ACK（选择确认）
+- 校验机制：头部和数据部分的和计算出来，再对其求反码 + 有源地址、目的地址、协议以及TCP        的长度
+- 重传机制
+  - 超时重传 ：发送端默认时间间隔内没有收到ACK包，重传
+  - 重复累计确认：接收端重复确认最后一个收到的包N, 即N+1包丢失
+- 计时器：控制超时重传间隔时间
+- 流控制：接收端控制，防止发送端短时间大数据
+
+#### 四次挥手
+
+![image-20210618173337154](picture/image-20210618173337154.png)
+
+
+
+## Git
+
+### 操作
+
+#### 本地已有仓库，远程未存在
+
+```bash
+git init # 本地初始化
+git remote add origin <远程仓库> # 先远程创建同名仓库
+git pull # 拉去远程仓库，且合并
+git add . # 本地文件加入tracking
+git commit -m "message" # 提交到本地仓库
+git push # 推送远程仓库
+```
+
+### error
+
+#### OpenSSL SSL_read: Connection was aborted, errno 10053
+
+原因，远程仓库修改了密码。`git config http.sslVerify "false"` 清除本地ssl验证，之后重新输入密码
 
