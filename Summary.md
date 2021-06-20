@@ -167,7 +167,78 @@ public enum SeasonEnum {
 
 枚举单例
 
+#### ConcurrentHashMap
 
+```java
+public V put(K key, V value) {
+    return putVal(key, value, false);
+}
+
+/** Implementation for put and putIfAbsent */
+final V putVal(K key, V value, boolean onlyIfAbsent) {
+    if (key == null || value == null) throw new NullPointerException(); // 不支持null的key or value
+    int hash = spread(key.hashCode()); // hash散列：(h ^ (h >>> 16)) & HASH_BITS;16高位散列与低16异或
+    int binCount = 0;
+    for (Node<K,V>[] tab = table;;) {
+        Node<K,V> f; int n, i, fh; // n:tab.length,i:(n-1)&hash
+        if (tab == null || (n = tab.length) == 0)
+            tab = initTable(); // 通过native.CAS实现安全初始化
+        else if ((f = tabAt(tab, i = (n - 1) & hash)) == null) {
+            if (casTabAt(tab, i, null,
+                         new Node<K,V>(hash, key, value, null))) // CAS
+                break;                   // no lock when adding to empty bin
+        }
+        else if ((fh = f.hash) == MOVED)
+            tab = helpTransfer(tab, f);
+        else {
+            V oldVal = null;
+            synchronized (f) {
+                if (tabAt(tab, i) == f) {
+                    if (fh >= 0) {
+                        binCount = 1;
+                        for (Node<K,V> e = f;; ++binCount) {
+                            K ek;
+                            if (e.hash == hash &&
+                                ((ek = e.key) == key ||
+                                 (ek != null && key.equals(ek)))) {
+                                oldVal = e.val;
+                                if (!onlyIfAbsent)
+                                    e.val = value;
+                                break;
+                            }
+                            Node<K,V> pred = e;
+                            if ((e = e.next) == null) {
+                                pred.next = new Node<K,V>(hash, key,
+                                                          value, null);
+                                break;
+                            }
+                        }
+                    }
+                    else if (f instanceof TreeBin) {
+                        Node<K,V> p;
+                        binCount = 2;
+                        if ((p = ((TreeBin<K,V>)f).putTreeVal(hash, key,
+                                                              value)) != null) {
+                            oldVal = p.val;
+                            if (!onlyIfAbsent)
+                                p.val = value;
+                        }
+                    }
+                }
+            }
+            if (binCount != 0) {
+                if (binCount >= TREEIFY_THRESHOLD)
+                    treeifyBin(tab, i);
+                if (oldVal != null)
+                    return oldVal;
+                break;
+            }
+        }
+    }
+    addCount(1L, binCount);
+    return null;
+}
+```
 
 ## 设计模式
 
@@ -302,6 +373,27 @@ transmission control block: 保存了连接信息一条条session
 
 
 
+## 框架
+
+### spring
+
+#### 什么是spring
+
+spring是一个轻量级开发框架，致力于提高开发效率和系统可维护性。
+
+#### spring核心模块
+
+​	![image-20210620134240519](picture/image-20210620134240519.png)
+
+- CORE：核心，主要提供IOC依赖注入功能。
+- AOP：面向切面编程的实现
+- JDBC：java数据库连接
+- WEB：为创建WEB程序提供支持
+- TEST：提供了Junit测试的支持
+- ORM：提供支持hibernate等ORM工具
+
+总结：主要模块
+
 ## Git
 
 ### 操作
@@ -322,4 +414,6 @@ git push # 推送远程仓库
 #### OpenSSL SSL_read: Connection was aborted, errno 10053
 
 原因，远程仓库修改了密码。`git config http.sslVerify "false"` 清除本地ssl验证，之后重新输入密码
+
+
 
