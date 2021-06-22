@@ -167,14 +167,21 @@ public enum SeasonEnum {
 
 枚举单例
 
-#### ConcurrentHashMap
+### ConcurrentHashMap
 
 ```java
+//false 代表非Set集合
 public V put(K key, V value) {
     return putVal(key, value, false);
 }
 
-/** Implementation for put and putIfAbsent */
+// 1.不支持key、value为null
+// 2.循环table，即自旋
+// 3.判断table为nul或length==0,初始化
+// 4.(n=tab.lenght)&(n-1)即下标处无元素，直接使用CAS添加node
+// 5.下标处元素hash==-1，转移元素（头结点是特殊节点）
+// 6.synchronized(头节点)，key相同返回原始值。不相同，返回null,大于等于8树化，增加计数。
+
 final V putVal(K key, V value, boolean onlyIfAbsent) {
     if (key == null || value == null) throw new NullPointerException(); // 不支持null的key or value
     int hash = spread(key.hashCode()); // hash散列：(h ^ (h >>> 16)) & HASH_BITS;16高位散列与低16异或
@@ -375,7 +382,7 @@ transmission control block: 保存了连接信息一条条session
 
 ## 框架
 
-### spring
+### Spring
 
 #### 什么是spring
 
@@ -393,6 +400,223 @@ spring是一个轻量级开发框架，致力于提高开发效率和系统可�
 - ORM：提供支持hibernate等ORM工具
 
 总结：主要模块
+
+#### 核心思想
+
+**IOC**
+
+- 资源不由使用资源的双方管理，由不使用资源的第三方管理
+
+  好处
+
+  - 集中管理，带来易管理
+  - 降低耦合度
+
+两种方法实现
+
+- XML
+- 配置类
+
+**bean的作用域**
+
+- 默认单例且饿汉
+- 更改为prototype则为多例懒汉
+- request
+- session
+
+**IOC容器添加组件的方式**
+
+- @CompentScan、@Controller、@Service、@Repository、@component
+- 
+
+
+
+### SpringBoot
+
+#### 自动装配原理
+
+文章：https://www.cnblogs.com/javaguide/p/springboot-auto-config.html
+
+是什么：通过注解或者简单的配置就能在springboot的帮助下实现某个功能
+
+核心注解
+
+- SpringbootApplication
+
+  - SpringBootConfiguration：是一个配置类
+
+    - Configuration
+
+  - ComponentScan：扫描启动类包下所有被Component(Controller,Server)修饰的bean
+
+  - EnableAutoConfiguration：开启自动装配
+
+    
+
+```JAVA
+@Target({ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Inherited
+<1.>@SpringBootConfiguration
+<2.>@ComponentScan
+<3.>@EnableAutoConfiguration
+public @interface SpringBootApplication {
+
+}
+
+@Target({ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Configuration //实际上它也是一个配置类
+public @interface SpringBootConfiguration {
+}
+```
+
+**@EnableAutoConfiguration:实现自动装配的核心注解**
+
+```JAVA
+@Target({ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Inherited
+@AutoConfigurationPackage //作用：将main包下的所欲组件注册到容器中
+@Import({AutoConfigurationImportSelector.class}) //加载自动装配类 xxxAutoconfiguration
+public @interface EnableAutoConfiguration {
+    String ENABLED_OVERRIDE_PROPERTY = "spring.boot.enableautoconfiguration";
+
+    Class<?>[] exclude() default {};
+
+    String[] excludeName() default {};
+}
+```
+
+这只是简单的注解，核心是导入了一个`AutoConfigurationImportSelector`自动装配类。
+
+**AutoConfigurationImportSelector:加载自动装配类**
+
+继承体系
+
+```JAVA
+public class AutoConfigurationImportSelector implements DeferredImportSelector, BeanClassLoaderAware, ResourceLoaderAware, BeanFactoryAware, EnvironmentAware, Ordered {
+
+}
+
+public interface DeferredImportSelector extends ImportSelector {
+
+}
+
+public interface ImportSelector {
+    String[] selectImports(AnnotationMetadata var1);
+}
+```
+
+核心是`ImportSelector`的接口`selectImport`接口
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+总结：
+
+由`SpringBootApplication`注解引入`EnableAutoConfiguration`注解再引入`AutoConfigurationImportSelector`注解实现了`ImportSelector`接口，将所有meta-inf/spring.factories下所有满足condition注解条件的自动配置类注入IOC容器中。所有可配置属性都可在EnableConfigurationProperties指定的配置类中找到，属性是通过set自动注入的。
+
+
+
+**那为什么实现了ImportSelector就可以加载类呢？**
+
+答：在spring源码中，留有很多暗门，只要实现了某些接口就可以被扫描到，注入IOC容器中。
+
+**有哪些接口呢？**
+
+beanFactoryPostPostProcessor
+
+beanDefinitionRegestryPostProcessor
+
+beanPostProcessor
+
+aware
+
+核心就是一些接口，只要实现了这些接口，就会执行接口方法
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1. 扫描spring-boot-autoconfig jar包下meta-inf/spring.factories，中的自动装配类，自动装配类通过EnableConfigurationProperties指定配置类，里面包含所有可以配置的属性，配置文件中的属性是调用set实现自动注入。
+
+
+
+springboot启动时会扫描外部引用jar包的MATE-INF/spring.factories
+
+### Redis
+
+### 消息队列
+
+优点
+
+- 异步提速
+- 削峰填谷
+- 应用解耦
+
+缺点
+
+- 增加系统复杂度
+- 系统可用性降低
+- 消息一致性问题
+
+选型
+
+![image-20210622165419444](picture/image-20210622165419444.png)
+
+- RabbitMQ：erlang开发，低延时，但消息堆压时性能会急剧下降
+- RocketMQ：java开发，功能最完备，支持的并发量最高，面向互联网集群化。
+- Kafks：scale开发，面向日志，性能最高，但容易丢数据，但每秒钟消息数量不多时，延时反而较高。
+- ActiveMQ：java开发，老牌，性能较低，不推荐使用
+
+### RocketMQ
+
+四大模块
+
+- Nameserver：提供轻量级的Brocker路由服务。注册中心，与Zookeeper的区别是【无状态】
+- Producter：生产者，负责发送消息到Broker
+- Broker：MQ本身，负责收发消息，持久化消息
+- Consumer：消费者，消费消息
+
+消息类型
+
+- 基本样例
+- 顺序消费
+- 广播消息：消费组成员
+- 延迟消息：延迟一定等级时间后再发送出去
+- 批量消息
+- 过滤消息
+
+
 
 ## Git
 
